@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이커머스 매출분석 시스템 V5.2 - 완전 복원</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+         {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 20px; }
+            .print-section { page-break-inside: avoid; margin-bottom: 20px; }
+        }
+        .chart-container { height: 400px; margin: 20px 0; }
+        .file-input { 
+            background: #3B82F6; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .btn-primary { 
+            background: #3B82F6; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 10px 5px;
+        }
+        .btn-secondary { 
+            background: #6B7280; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 10px 5px;
+        }
+        .btn-success { 
+            background: #10B981; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- 헤더 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-chart-line text-blue-500 mr-3"></i>
+                이커머스 매출분석 시스템 V5.2
+            </h1>
+            <p class="text-gray-600">완전한 매출 분석, 픽킹리스트 생성, ERP 연동 종합 시스템</p>
+        </div>
+
+        <!-- 파일 업로드 섹션 -->
+        <div id="uploadSection" class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4"><i class="fas fa-upload text-green-500 mr-2"></i>1단계: 매출 Excel 파일 업로드</h2>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <i class="fas fa-file-excel text-4xl text-green-500 mb-4"></i>
+                <p class="text-gray-600 mb-4">매일 매출 Excel 파일을 선택해주세요</p>
+                <input type="file" id="salesFile" accept=".xlsx,.xls" class="file-input">
+                <p id="mainFileName" class="text-sm text-gray-500 mt-2"></p>
+            </div>
+        </div>
+
+        <!-- 3시 이후 파일 선택 섹션 -->
+        <div id="additionalFileSection" class="bg-white rounded-lg shadow-md p-6 mb-6" style="display: none;">
+            <h2 class="text-xl font-semibold mb-4"><i class="fas fa-clock text-orange-500 mr-2"></i>2단계: 전일 3시 이후 출고 데이터</h2>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p class="text-gray-700 mb-4"><i class="fas fa-question-circle text-orange-500 mr-2"></i>전일 3시 이후 출고 데이터가 있나요?</p>
+                <button id="hasAdditionalFile" class="btn-primary mr-4">
+                    <i class="fas fa-check mr-2"></i>네, 추가 파일이 있습니다
+                </button>
+                <button id="noAdditionalFile" class="btn-secondary">
+                    <i class="fas fa-times mr-2"></i>아니요, 바로 분석
+                </button>
+            </div>
+            
+            <div id="additionalFileUpload" style="display: none;" class="mt-4">
+                <div class="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center">
+                    <i class="fas fa-file-plus text-3xl text-orange-500 mb-3"></i>
+                    <p class="text-gray-600 mb-4">전일 3시 이후 출고 Excel 파일 업로드</p>
+                    <input type="file" id="additionalFile" accept=".xlsx,.xls" class="file-input">
+                    <p id="additionalFileName" class="text-sm text-blue-600 mt-2 font-medium"></p>
+                </div>
+                <button id="startAnalysis" class="btn-success mt-4" style="display: none;">
+                    <i class="fas fa-play mr-2"></i>분석 시작
+                </button>
+            </div>
+        </div>
+
+        <!-- 결과 섹션들 -->
+        <div id="resultsContainer" style="display: none;">
+            <!-- 픽킹리스트 섹션 -->
+            <div id="pickingSection" class="bg-white rounded-lg shadow-md p-6 mb-6 print-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold"><i class="fas fa-list-check text-purple-500 mr-2"></i>픽킹대상용 파일 리스트</h2>
+                    <button id="printPicking" class="btn-primary no-print">
+                        <i class="fas fa-print mr-2"></i>인쇄
+                    </button>
+                </div>
+                <div id="pickingTable"></div>
+            </div>
+
+            <!-- TOP 20 SKU 분석 -->
+            <div id="top20Section" class="bg-white rounded-lg shadow-md p-6 mb-6 print-section">
+                <h2 class="text-xl font-semibold mb-4"><i class="fas fa-trophy text-yellow-500 mr-2"></i>TOP 20 SKU 분석</h2>
+                <div class="chart-container">
+                    <canvas id="top20Chart"></canvas>
+                </div>
+                <div id="top20Table"></div>
+            </div>
+
+            <!-- 마켓별 TOP 10 분석 -->
+            <div id="marketAnalysisSection" class="bg-white rounded-lg shadow-md p-6 mb-6 print-section">
+                <h2 class="text-xl font-semibold mb-4"><i class="fas fa-store text-red-500 mr-2"></i>마켓별 TOP 10 분석</h2>
+                <div id="marketCharts"></div>
+                <div id="marketTables"></div>
+            </div>
+
+            <!-- ERP 연동 및 자동화 -->
+            <div id="erpSection" class="bg-white rounded-lg shadow-md p-6 mb-6 print-section">
+                <h2 class="text-xl font-semibold mb-4"><i class="fas fa-cogs text-indigo-500 mr-2"></i>ERP 연동 및 자동화</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="generateSalesDeduction" class="btn-primary p-6 text-left">
+                        <i class="fas fa-file-download text-2xl mb-2"></i>
+                        <div class="font-semibold">판매차감용파일생성</div>
+                        <div class="text-sm opacity-80">이카운트 ERP 연동용 파일</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let salesData = [];
+        let additionalData = [];
+        let processedData = [];
+
+        // 파일 업로드 이벤트
+        document.getElementById('salesFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('mainFileName').textContent = `선택된 파일: ${file.name}`;
+                document.getElementById('additionalFileSection').style.display = 'block';
+                readExcelFile(file, 'main');
+            }
+        });
+
+        document.getElementById('additionalFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('additionalFileName').textContent = `선택된 파일: ${file.name}`;
+                document.getElementById('startAnalysis').style.display = 'inline-block';
+                readExcelFile(file, 'additional');
+            }
+        });
+
+        // 추가 파일 버튼 이벤트
+        document.getElementById('hasAdditionalFile').addEventListener('click', function() {
+            document.getElementById('additionalFileUpload').style.display = 'block';
+        });
+
+        document.getElementById('noAdditionalFile').addEventListener('click', function() {
+            startDataAnalysis();
+        });
+
+        document.getElementById('startAnalysis').addEventListener('click', function() {
+            startDataAnalysis();
+        });
+
+        // Excel 파일 읽기
+        function readExcelFile(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                if (type === 'main') {
+                    salesData = processRawData(jsonData);
+                } else {
+                    additionalData = processRawData(jsonData);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 원시 데이터 처리
+        function processRawData(jsonData) {
+            if (jsonData.length < 2) return [];
+            
+            const headers = jsonData[0];
+            const rows = jsonData.slice(1);
+            
+            return rows.map(row => {
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = row[index] || '';
+                });
+                return obj;
+            }).filter(row => row['SKU코드'] || row['SKU상품명']);
+        }
+
+        // 데이터 분석 시작
+        function startDataAnalysis() {
+            // 메인 데이터와 추가 데이터 병합
+            processedData = [...salesData, ...additionalData];
+            
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            // 각 분석 함수 호출
+            generatePickingList();
+            generateTop20Analysis();
+            generateMarketAnalysis();
+            
+            // 스크롤을 결과 섹션으로 이동
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 픽킹리스트 생성
+        function generatePickingList() {
+            const pickingData = [];
+            
+            processedData.forEach(row => {
+                const skuCodes = String(row['SKU코드'] || '').split(',').map(s => s.trim()).filter(s => s);
+                const skuNames = String(row['SKU상품명'] || '').split(',').map(s => s.trim()).filter(s => s);
+                const quantities = String(row['총출고수량'] || '').split(',').map(s => s.trim()).filter(s => s);
+                const wmsLocation = extractWMSLocation(row['SKU상품속성'] || '');
+                
+                const maxLength = Math.max(skuCodes.length, skuNames.length, quantities.length);
+                
+                for (let i = 0; i < maxLength; i++) {
+                    if (skuCodes[i] && quantities[i] && quantities[i] !== '0') {
+                        pickingData.push({
+                            skuCode: skuCodes[i] || '',
+                            skuName: skuNames[i] || skuNames[0] || '',
+                            quantity: parseInt(quantities[i]) || 0,
+                            wmsLocation: wmsLocation,
+                            mall: row['쇼핑몰'] || '',
+                            recipient: row['수령자명'] || ''
+                        });
+                    }
+                }
+            });
+
+            // 픽킹리스트 테이블 생성
+            let tableHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="border border-gray-300 px-4 py-2 text-left">SKU코드</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">상품명</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">수량</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">WMS위치</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">쇼핑몰</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">수령자</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            pickingData.forEach(item => {
+                tableHTML += `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${item.skuCode}</td>
+                        <td class="border border-gray-300 px-4 py-2">${item.skuName}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${item.quantity}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${item.wmsLocation}</td>
+                        <td class="border border-gray-300 px-4 py-2">${item.mall}</td>
+                        <td class="border border-gray-300 px-4 py-2">${item.recipient}</td>
+                    </tr>
+                `;
+            });
+
+            const totalQuantity = pickingData.reduce((sum, item) => sum + item.quantity, 0);
+            tableHTML += `
+                        <tr class="bg-yellow-50 font-bold">
+                            <td class="border border-gray-300 px-4 py-2" colspan="2">합계</td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">${totalQuantity}</td>
+                            <td class="border border-gray-300 px-4 py-2" colspan="3"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            `;
+
+            document.getElementById('pickingTable').innerHTML = tableHTML;
+        }
+
+        // WMS 위치 추출
+        function extractWMSLocation(attributes) {
+            if (!attributes) return '';
+            const match = attributes.match(/WMS:([A-Z0-9]+)/i);
+            return match ? match[1] : '';
+        }
+
+        // TOP 20 SKU 분석
+        function generateTop20Analysis() {
+            const skuSummary = {};
+            
+            processedData.forEach(row => {
+                const skuCode = row['SKU코드'];
+                const skuName = row['SKU상품명'];
+                const quantity = parseInt(row['총출고수량']) || 0;
+                
+                if (skuCode && quantity > 0) {
+                    if (!skuSummary[skuCode]) {
+                        skuSummary[skuCode] = {
+                            name: skuName,
+                            totalQuantity: 0
+                        };
+                    }
+                    skuSummary[skuCode].totalQuantity += quantity;
+                }
+            });
+
+            const sortedSKUs = Object.entries(skuSummary)
+                .sort(([,a], [,b]) => b.totalQuantity - a.totalQuantity)
+                .slice(0, 20);
+
+            // 꺾은선 그래프 생성
+            const ctx = document.getElementById('top20Chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedSKUs.map(([code, data]) => code),
+                    datasets: [{
+                        label: '총 출고량',
+                        data: sortedSKUs.map(([code, data]) => data.totalQuantity),
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'TOP 20 SKU 출고량 트렌드'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // 테이블 생성
+            let tableHTML = `
+                <div class="overflow-x-auto mt-4">
+                    <table class="min-w-full border border-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="border border-gray-300 px-4 py-2 text-center">순위</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">SKU코드</th>
+                                <th class="border border-gray-300 px-4 py-2 text-left">상품명</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">총 출고량</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            sortedSKUs.forEach(([code, data], index) => {
+                tableHTML += `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-bold">${index + 1}</td>
+                        <td class="border border-gray-300 px-4 py-2">${code}</td>
+                        <td class="border border-gray-300 px-4 py-2">${data.name}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${data.totalQuantity}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+                </div>
+            `;
+
+            document.getElementById('top20Table').innerHTML = tableHTML;
+        }
+
+        // 마켓별 TOP 10 분석
+        function generateMarketAnalysis() {
+            const marketData = {};
+            
+            processedData.forEach(row => {
+                const mall = row['쇼핑몰'];
+                const skuCode = row['SKU코드'];
+                const skuName = row['SKU상품명'];
+                const quantity = parseInt(row['총출고수량']) || 0;
+                
+                if (mall && skuCode && quantity > 0) {
+                    if (!marketData[mall]) {
+                        marketData[mall] = {};
+                    }
+                    if (!marketData[mall][skuCode]) {
+                        marketData[mall][skuCode] = {
+                            name: skuName,
+                            totalQuantity: 0
+                        };
+                    }
+                    marketData[mall][skuCode].totalQuantity += quantity;
+                }
+            });
+
+            let chartsHTML = '';
+            let tablesHTML = '';
+
+            Object.entries(marketData).forEach(([mall, skus]) => {
+                const sortedSKUs = Object.entries(skus)
+                    .sort(([,a], [,b]) => b.totalQuantity - a.totalQuantity)
+                    .slice(0, 10);
+
+                const chartId = `chart_${mall.replace(/[^a-zA-Z0-9]/g, '')}`;
+                
+                chartsHTML += `
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-2">${mall} TOP 10</h3>
+                        <div class="chart-container">
+                            <canvas id="${chartId}"></canvas>
+                        </div>
+                    </div>
+                `;
+
+                tablesHTML += `
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-2">${mall} TOP 10 상세</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="border border-gray-300 px-4 py-2 text-center">순위</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">SKU코드</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">상품명</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-center">출고량</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                sortedSKUs.forEach(([code, data], index) => {
+                    tablesHTML += `
+                        <tr>
+                            <td class="border border-gray-300 px-4 py-2 text-center font-bold">${index + 1}</td>
+                            <td class="border border-gray-300 px-4 py-2">${code}</td>
+                            <td class="border border-gray-300 px-4 py-2">${data.name}</td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">${data.totalQuantity}</td>
+                        </tr>
+                    `;
+                });
+
+                tablesHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                // 차트 생성을 위해 setTimeout 사용
+                setTimeout(() => {
+                    const ctx = document.getElementById(chartId);
+                    if (ctx) {
+                        new Chart(ctx.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: sortedSKUs.map(([code]) => code),
+                                datasets: [{
+                                    label: '출고량',
+                                    data: sortedSKUs.map(([, data]) => data.totalQuantity),
+                                    borderColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                                    backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.1)`,
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    title: {
+                                        display: true,
+                                        text: `${mall} TOP 10 트렌드`
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }, 100);
+            });
+
+            document.getElementById('marketCharts').innerHTML = chartsHTML;
+            document.getElementById('marketTables').innerHTML = tablesHTML;
+        }
+
+        // 판매차감파일 생성
+        document.getElementById('generateSalesDeduction').addEventListener('click', function() {
+            const today = new Date();
+            const dateString = today.getFullYear().toString() + 
+                             (today.getMonth() + 1).toString().padStart(2, '0') + 
+                             today.getDate().toString().padStart(2, '0');
+            
+            const salesDeductionData = [];
+            
+            processedData.forEach(row => {
+                const skuCodes = String(row['SKU코드'] || '').split(',').map(s => s.trim()).filter(s => s);
+                const skuNames = String(row['SKU상품명'] || '').split(',').map(s => s.trim()).filter(s => s);
+                const quantities = String(row['총출고수량'] || '').split(',').map(s => s.trim()).filter(s => s);
+                
+                const maxLength = Math.max(skuCodes.length, skuNames.length, quantities.length);
+                
+                for (let i = 0; i < maxLength; i++) {
+                    if (skuCodes[i] && quantities[i] && quantities[i] !== '0') {
+                        salesDeductionData.push({
+                            '날짜': dateString,
+                            '순번': '',
+                            '거래처코드': '',
+                            '거래처명': row['쇼핑몰'] || '',
+                            '담당자': '', // 직접입력 필요
+                            '출하창고': '지하창고(오렌지나무)',
+                            '거래유형': '',
+                            '통화': '',
+                            '환율': '',
+                            '품목코드': skuCodes[i] || '',
+                            '품목명': skuNames[i] || skuNames[0] || '',
+                            '규격': '',
+                            '수량': quantities[i] || '',
+                            '단가': '',
+                            '외화금액': '',
+                            '공급가액': '',
+                            '부가세': '',
+                            '적요': row['수령자명'] || '',
+                            '시리얼/로트': '',
+                            '생산전표생성': ''
+                        });
+                    }
+                }
+            });
+
+            // Excel 파일 생성
+            const ws = XLSX.utils.json_to_sheet(salesDeductionData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "판매차감파일");
+            
+            const fileName = `판매차감파일_${dateString}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`판매차감파일이 생성되었습니다: ${fileName}`);
+        });
+
+        // 인쇄 기능
+        document.getElementById('printPicking').addEventListener('click', function() {
+            window.print();
+        });
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDsQ%2FYgpJ6LyFZ9Gx5YBhgHrtqknd6E25m6xa7X3XG6HSWQIRG7hDORakE9RshA%2FVXhjkgtevR7Y8%2BnY3mhW7tw8jbktA1O42BiyeQ6Q2R0Fz0GLg46jg6XV%2BrcQrJ%2FjmrrPWWhLAzowDgwNsrze4WBuqtTLXXv3gaN%2FoIynrG7%2BcA9UM0Eb2JEs%2BVFBl7VGIxI1wyze6nnaIZl8UyueIPH1aslkKftQytilgDV6qAulgkUcTa1%2F018mUoYoMWsSD%2FsjKZCBjfeQVLKTJSDmbaUvmCzsU06GnxXVIyU0iWNYt694S2TPqA2lYAVX1TqTgMwz03HKqsXOHzK9AH9%2BQytdlcHnf2iPUvA7Uc39hrDk8X2A%2FC16fNU%2FmgMJCP92wNwcq6k%2F2KvSkcT5frDXWLRx0lY4lMtWDXTsjfwJ1w8v2XvwyTpQt76fN26I%2BagO6b37jOEGCDQzAm0hPCEmfVfgnQdlBlkTlrG1CoMqC85y1SOqlmaJXiGaS4Qfrx4kOK1BSrkYWquvfz6QVRKHE3rA%3D";
+        window.__genspark_locale = "ko-KR";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDsQ/YgpJ6LyFZ9Gx5YBhgHrtqknd6E25m6xa7X3XG6HSWQIRG7hDORakE9RshA/VXhjkgtevR7Y8+nY3mhW7tw8jbktA1O42BiyeQ6Q2R0Fz0GLg46jg6XV+rcQrJ/jmrrPWWhLAzowDgwNsrze4WBuqtTLXXv3gaN/oIynrG7+cA9UM0Eb2JEs+VFBl7VGIxI1wyze6nnaIZl8UyueIPH1aslkKftQytilgDV6qAulgkUcTa1/018mUoYoMWsSD/sjKZCBjfeQVLKTJSDmbaUvmCzsU06GnxXVIyU0iWNYt694S2TPqA2lYAVX1TqTgMwz03HKqsXOHzK9AH9+QytdlcHnf2iPUvA7Uc39hrDk8X2A/C16fNU/mgMJCP92wNwcq6k/2KvSkcT5frDXWLRx0lY4lMtWDXTsjfwJ1w8v2XvwyTpQt76fN26I+agO6b37jOEGCDQzAm0hPCEmfVfgnQdlBlkTlrG1CoMqC85y1SOqlmaJXiGaS4Qfrx4kOK1BSrkYWquvfz6QVRKHE3rA=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
