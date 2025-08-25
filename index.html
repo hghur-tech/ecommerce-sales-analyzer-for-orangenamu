@@ -580,6 +580,103 @@
             window.print();
         });
     </script>
+<!-- Notion-like Block: ECOUNT 재고실사용 가이드 (paste near </body>) -->
+<style>
+  .notion-ecount { max-width: 920px; margin: 40px auto 64px; padding: 0 16px;
+    font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color: #0f172a; line-height: 1.75; }
+  .notion-ecount h1 { font-size: 1.5rem; margin: 0 0 10px; display: flex; gap: 8px; align-items: center; }
+  .notion-ecount h2 { font-size: 1.125rem; margin: 22px 0 10px; }
+  .notion-ecount a { color: #2563eb; text-decoration: none; border-bottom: 1px solid rgba(37,99,235,.35); }
+  .notion-ecount .callout { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 18px; }
+  .notion-ecount .callout-emoji { font-size: 1.1rem; }
+  .notion-ecount .chip { display:inline-block; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color:#3730a3; font-weight:600; font-size:.8rem; }
+  .notion-ecount kbd { background:#111827; color:#fff; border-radius:6px; padding:2px 6px; font-size:.8rem; }
+  .notion-ecount ol { padding-left: 1.25rem; }
+  .notion-ecount ol > li { margin: 8px 0; }
+  .notion-ecount .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .notion-ecount .steps li { display:flex; gap:12px; align-items:flex-start; margin: 10px 0; }
+  .notion-ecount .steps li::before {
+    counter-increment: step; content: counter(step);
+    flex:0 0 28px; height:28px; display:grid; place-items:center;
+    background:#111827; color:#fff; border-radius:50%;
+    font-weight:700; font-size:.9rem; margin-top: 2px;
+  }
+  .notion-ecount details { background: #fafafa; border: 1px solid #eee; border-radius: 12px;
+    padding: 12px; margin: 12px 0; }
+  .notion-ecount summary { cursor: pointer; font-weight: 700; }
+  .notion-ecount .tip, .notion-ecount .warn {
+    border-radius: 12px; padding: 10px 12px; margin: 12px 0;
+    border:1px solid;
+  }
+  .notion-ecount .tip { background:#f0fdf4; border-color:#86efac; }
+  .notion-ecount .warn { background:#fff7ed; border-color:#fdba74; }
+  .notion-ecount code { background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:6px; }
+  .notion-ecount .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  .notion-ecount hr { border: 0; border-top: 1px solid #e5e7eb; margin: 18px 0; }
+</style>
+
+<div class="notion-ecount" id="ecount-physical-inventory">
+  <h1>📦 재고실사용 ECOUNT ERP 자료 다운로드 절차</h1>
+
+  <div class="callout">
+    <div class="callout-emoji">⚙️</div>
+    <div>
+      <strong>사전 안내</strong><br>
+      이 절차는 <span class="chip">My Page 설정 완료</span> 후 사용합니다. 아래 <em>설정 방법</em>을 먼저 수행하세요.
+    </div>
+  </div>
+
+  <details>
+    <summary>🔧 My Page 설정 방법 (선행)</summary>
+    <div style="margin-top:8px">
+      <ol>
+        <li>로그인 화면 우측 상단 <kbd>프로필</kbd> 클릭 → <kbd>개인기능설정</kbd> 진입</li>
+        <li><kbd>mypage설정</kbd> 클릭</li>
+        <li>왼쪽 <strong>mypage 기본그룹</strong>에서 빠른 접속 메뉴 선택
+          <div class="tip" style="margin-top:8px">
+            <strong>체크 경로</strong>:
+            <span class="mono">재고1 → 출력물 → 재고현황 → 재고변동표</span> 선택 후
+            <kbd>←</kbd> 버튼으로 기본그룹에 이동
+          </div>
+        </li>
+        <li><strong>재고변동표</strong> 화면에서 우측 <kbd>+</kbd>로 새 탭 생성 → 탭 이름을 <code>당일재고실사용</code>으로 변경</li>
+        <li><strong>창고지정</strong>을 <code>지하창고(오렌지나무)</code>로 설정 → <kbd>저장</kbd>/<kbd>검색</kbd></li>
+        <li>화면 하단 <span class="mono">검색 | 금일 | 전일 ...</span> 영역에서 우측 아래 <strong>꺾쇠</strong> 아이콘으로 확장 →
+          <kbd>설정</kbd> → <strong>간편검색명</strong> <code>금일</code> 우측 <strong>조회기본값</strong> 체크 → <kbd>저장</kbd>
+        </li>
+      </ol>
+    </div>
+  </details>
+
+  <h2>🚀 실행 순서</h2>
+  <ol class="steps">
+    <li>🔗 <strong>접속</strong> — <a href="https://login.ecount.com/Login/" target="_blank" rel="noopener">https://login.ecount.com/Login/</a></li>
+    <li>👤 <strong>로그인</strong> — 회사코드 / 아이디 / 비밀번호 입력</li>
+    <li>🧭 <strong>이동</strong> — <kbd>My Page</kbd> 하위 메뉴의 <kbd>재고변동표</kbd> 클릭</li>
+    <li>🏷️ <strong>조건 확인</strong> — 창고: <code>지하창고(오렌지나무)</code>, 기준일자: <code>오늘 ~ 오늘</code> 상태 확인 후 <kbd>검색</kbd></li>
+    <li>📤 <strong>다운로드</strong> — 조회 결과 하단의 <kbd>Excel</kbd> 버튼 클릭 → 파일 저장<br>
+        표준 파일명: <code>재고실사표_YYYYMMDD_HHMM.xls</code></li>
+    <li>🧽 <strong>데이터 정리</strong> — 엑셀을 열어 <strong>E열(출고수량)</strong>이 <u>없는 행</u>을 하단으로 모아 <u>행 삭제</u></li>
+    <li>✅ <strong>실사 대상 확정</strong> — 남아있는 행의 <code>SKU</code>가 <strong>당일 재고실사 대상</strong></li>
+    <li>📍 <strong>현장 실사</strong> — 단품 위치/카톤 박스 위치 확인 후 실사 진행</li>
+  </ol>
+
+  <div class="warn">
+    ⚠️ <strong>주의</strong><br>
+    행 삭제 전 파일을 <em>별도 사본</em>(예: <code>재고실사표_RAW_YYYYMMDD_HHMM.xls</code>)으로 보관하세요.
+  </div>
+
+  <hr>
+  <h2>🗂️ 파일명 규칙</h2>
+  <p><code>재고실사표_YYYYMMDD_HHMM.xls</code> (예: <code>재고실사표_20250825_1030.xls</code>)</p>
+
+  <div class="tip">
+    💡 <strong>팁</strong><br>
+    크롬을 사용할 경우, 팝업 차단 해제하면 다운로드 오류가 줄어듭니다. 기간 조건을 먼저 맞춘 뒤 조회하면 속도가 빨라집니다.
+  </div>
+</div>
 </body>
 </html>
     <script id="html_badge_script1">
